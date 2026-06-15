@@ -4,6 +4,7 @@ import calendar as cal_lib
 from datetime import date
 from repository.schedule import get_monthly, get_by_date, complete_schedule, delete_schedule
 from repository.plant import add_points, get_plant
+from repository.daily_log import get_log, upsert_log, MOOD_EMOJI
 from theme import (SCREEN, CARD, CARD_ALT, BORDER, ACCENT, TEXT, SUB, FAINT,
                    FIRE, WATER, DAY_RED, HEAT, STAGE_EMOJI, border)
 
@@ -38,6 +39,41 @@ def build_calendar_page(page: ft.Page) -> ft.Control:
 
     detail_date_lbl = ft.Text('', size=16, weight=ft.FontWeight.W_800, color=TEXT)
     detail_list     = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
+
+    sel_mood   = [None]   # 선택된 mood 코드
+    mood_btns  = {}       # mood코드 → ft.Container
+    diary_field = ft.TextField(
+        hint_text='오늘 하루를 기록해보세요...',
+        multiline=True, min_lines=2, max_lines=3,
+        color=TEXT, border_color=BORDER, focused_border_color=ACCENT,
+        hint_style=ft.TextStyle(color=FAINT),
+        border_radius=10,
+        content_padding=ft.Padding(left=12, top=10, right=12, bottom=10),
+    )
+
+    MOODS = [('great','😄'), ('good','😊'), ('neutral','😐'), ('bad','😟'), ('terrible','😢')]
+
+    def make_mood_btn(code, emoji):
+        def on_tap(e):
+            sel_mood[0] = code
+            for k, btn in mood_btns.items():
+                btn.border  = border(2, ACCENT if k == code else BORDER)
+                btn.bgcolor = CARD if k == code else CARD_ALT
+            page.update()
+        c = ft.Container(
+            content=ft.Text(emoji, size=26, text_align=ft.TextAlign.CENTER),
+            width=48, height=48, border_radius=12,
+            bgcolor=CARD_ALT, border=border(2, BORDER),
+            alignment=ft.Alignment(0, 0),
+            on_click=on_tap,
+        )
+        mood_btns[code] = c
+        return c
+
+    mood_row = ft.Row(
+        [make_mood_btn(c, e) for c, e in MOODS],
+        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+    )
 
     def refresh_detail():
         detail_list.controls.clear()
@@ -113,7 +149,24 @@ def build_calendar_page(page: ft.Page) -> ft.Control:
         y, m, d = d_str.split('-')
         detail_date_lbl.value = f"{int(m)}월 {int(d)}일"
         refresh_detail()
+        # 기존 기분/일기 불러오기
+        log = get_log(session.state['user_id'], d_str)
+        saved_mood  = log['mood']  if log else None
+        saved_diary = log['diary'] if log else ''
+        sel_mood[0]       = saved_mood
+        diary_field.value = saved_diary or ''
+        for code, btn in mood_btns.items():
+            btn.border  = border(2, ACCENT if code == saved_mood else BORDER)
+            btn.bgcolor = CARD if code == saved_mood else CARD_ALT
         detail_dlg.open = True
+        page.update()
+
+    def save_log(e=None):
+        diary = diary_field.value.strip()
+        if sel_mood[0] or diary:
+            upsert_log(session.state['user_id'], sel_date[0], sel_mood[0], diary or None)
+        detail_dlg.open = False
+        build_grid()
         page.update()
 
     def close_detail(e=None):
@@ -144,14 +197,26 @@ def build_calendar_page(page: ft.Page) -> ft.Control:
             ),
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         content=ft.Container(
-            width=320, height=280,
-            content=detail_list,
+            width=320, height=420,
+            content=ft.Column([
+                detail_list,
+                ft.Divider(color=BORDER, height=1),
+                ft.Container(height=4),
+                ft.Text('오늘 기분', size=12, color=SUB, weight=ft.FontWeight.W_600),
+                ft.Container(height=4),
+                mood_row,
+                ft.Container(height=10),
+                ft.Text('오늘 일기', size=12, color=SUB, weight=ft.FontWeight.W_600),
+                ft.Container(height=4),
+                diary_field,
+            ], spacing=0, scroll=ft.ScrollMode.AUTO),
         ),
         actions=[
-            ft.TextButton(
-                '닫기', on_click=close_detail,
-                style=ft.ButtonStyle(color=SUB),
-            ),
+            ft.TextButton('닫기', on_click=close_detail,
+                          style=ft.ButtonStyle(color=SUB)),
+            ft.ElevatedButton('저장', on_click=save_log,
+                              bgcolor=ACCENT, color='#0E120C',
+                              style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )

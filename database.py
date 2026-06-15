@@ -101,6 +101,19 @@ def create_tables():
         )
     """)
 
+    # ── daily_log (날짜별 기분 + 일기, 복합 PK) ──────────────────────────────
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS daily_log (
+            user_id    INTEGER     NOT NULL,
+            log_date   DATE        NOT NULL,
+            mood       VARCHAR(20) CHECK (mood IN ('great','good','neutral','bad','terrible')),
+            diary      TEXT,
+            updated_at TIMESTAMP   DEFAULT NOW(),
+            PRIMARY KEY (user_id, log_date),
+            FOREIGN KEY (user_id) REFERENCES user(id)
+        )
+    """)
+
     # ── user_item (복합 PK — 대리키 id 불필요) ───────────────────────────────
     con.execute("""
         CREATE TABLE IF NOT EXISTS user_item (
@@ -126,6 +139,8 @@ def create_tables():
     con.execute("CREATE INDEX IF NOT EXISTS idx_interact_pair      ON interaction(from_user_id, to_user_id)")
     # 보유 아이템 조회
     con.execute("CREATE INDEX IF NOT EXISTS idx_user_item_user     ON user_item(user_id)")
+    # 날짜별 기분/일기 조회
+    con.execute("CREATE INDEX IF NOT EXISTS idx_daily_log_user     ON daily_log(user_id, log_date)")
 
     # ── 뷰 (자주 쓰는 JOIN 쿼리를 뷰로 정의) ────────────────────────────────
     # 뷰1: 유저 + 식물 현황 통합
@@ -298,7 +313,7 @@ def reset_db():
     con = get_connection()
     for view in ['v_friend_public_schedule', 'v_friend_plant', 'v_user_plant']:
         con.execute(f"DROP VIEW IF EXISTS {view}")
-    for tbl in ['user_item', 'item', 'interaction', 'friend', 'plant', 'schedule', 'user']:
+    for tbl in ['user_item', 'item', 'interaction', 'friend', 'plant', 'schedule', 'daily_log', 'user']:
         con.execute(f"DROP TABLE IF EXISTS {tbl}")
     for seq in ['seq_user', 'seq_schedule', 'seq_plant', 'seq_interaction', 'seq_item']:
         con.execute(f"DROP SEQUENCE IF EXISTS {seq}")
