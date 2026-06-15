@@ -54,15 +54,15 @@ def get_friends_with_plant(user_id: int) -> list[dict]:
         for r in rows
     ]
 
-def water_cooldown_label(from_user_id: int, to_user_id: int) -> str | None:
-    """오늘 물을 줬으면 '몇시간 후' 문자열 반환, 아니면 None"""
+def interaction_cooldown_label(from_user_id: int, to_user_id: int, type_: str) -> str | None:
+    """해당 type 상호작용을 오늘 이미 했으면 남은 시간 문자열 반환, 아니면 None"""
     con = get_connection()
     row = con.execute(
         """SELECT sent_at FROM interaction
-           WHERE from_user_id = ? AND to_user_id = ? AND type = 'water'
+           WHERE from_user_id = ? AND to_user_id = ? AND type = ?
              AND DATE(sent_at) = CURRENT_DATE
            ORDER BY sent_at DESC LIMIT 1""",
-        [from_user_id, to_user_id]
+        [from_user_id, to_user_id, type_]
     ).fetchone()
     con.close()
     if row is None:
@@ -70,14 +70,13 @@ def water_cooldown_label(from_user_id: int, to_user_id: int) -> str | None:
     sent_at = row[0]
     if hasattr(sent_at, 'replace'):
         sent_at = sent_at.replace(tzinfo=None)
-    now       = datetime.now()
-    elapsed   = (now - sent_at).total_seconds()
-    remaining = max(0, 86400 - elapsed)
+    remaining = max(0, 86400 - (datetime.now() - sent_at).total_seconds())
     h = int(remaining // 3600)
     m = int((remaining % 3600) // 60)
-    if h > 0:
-        return f'{h}시간 후'
-    return f'{m}분 후'
+    return f'{h}시간 후' if h > 0 else f'{m}분 후'
+
+def water_cooldown_label(from_user_id: int, to_user_id: int) -> str | None:
+    return interaction_cooldown_label(from_user_id, to_user_id, 'water')
 
 def has_watered_today(from_user_id: int, to_user_id: int) -> bool:
     con = get_connection()
