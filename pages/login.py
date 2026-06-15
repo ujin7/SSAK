@@ -1,7 +1,7 @@
 import flet as ft
 import session
 from repository.user import get_users_with_plant, create_user_with_plant
-from theme import SCREEN, CARD, CARD_ALT, BORDER, ACCENT, TEXT, SUB, FAINT, STAGE_EMOJI, border
+from theme import SCREEN, CARD, CARD_ALT, BORDER, ACCENT, TEXT, SUB, FAINT, STAGE_EMOJI, STAGE_LABELS, border
 
 
 def build_login_page(page: ft.Page, on_login) -> ft.Control:
@@ -36,7 +36,7 @@ def build_login_page(page: ft.Page, on_login) -> ft.Control:
                     ft.Column([
                         ft.Text(u['nickname'], size=16,
                                 weight=ft.FontWeight.W_700, color=TEXT),
-                        ft.Text(f"{u['stage']} · {u['points']}p",
+                        ft.Text(f"{STAGE_LABELS.get(u['stage'], u['stage'])} · {u['points']}p",
                                 size=12, color=SUB),
                     ], spacing=3, expand=True),
                     ft.Icon(ft.Icons.CHEVRON_RIGHT, color=FAINT, size=20),
