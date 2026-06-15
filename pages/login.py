@@ -166,16 +166,20 @@ def build_login_page(page: ft.Page, on_login) -> ft.Control:
     return ft.Container(
         bgcolor=SCREEN,
         expand=True,
+        padding=ft.Padding(left=24, top=0, right=24, bottom=0),
         content=ft.Column(
             [
-                ft.Container(height=72),
+                ft.Container(height=80),
                 ft.Container(
                     alignment=ft.Alignment(0, 0),
                     content=_logo(),
                 ),
-                ft.Container(height=48),
+                ft.Container(height=40),
                 ft.Container(
-                    padding=ft.Padding(left=28, top=0, right=28, bottom=0),
+                    bgcolor=CARD,
+                    border_radius=24,
+                    border=border(1, BORDER),
+                    padding=ft.Padding(left=24, top=28, right=24, bottom=28),
                     content=ft.Column([login_form, signup_form], spacing=0),
                 ),
             ],

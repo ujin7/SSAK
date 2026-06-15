@@ -10,11 +10,20 @@ from theme import SCREEN, CARD, BORDER, ACCENT, TEXT, SUB, FAINT, border
 def build_profile_page(page: ft.Page, navigate=None, on_logout=None) -> ft.Control:
     nickname_text = ft.Text('', size=22, weight=ft.FontWeight.W_800, color=TEXT)
     avatar_emoji  = ft.Text('🌿', size=40)
-    stats_row     = ft.Row(
-        wrap=True,
-        alignment=ft.MainAxisAlignment.CENTER,
-        spacing=10, run_spacing=10,
-    )
+    stats_grid    = ft.Column(spacing=10)
+
+    def _stat_card(label, value):
+        return ft.Container(
+            expand=True,
+            bgcolor=CARD,
+            border_radius=14,
+            border=border(1, BORDER),
+            padding=ft.Padding(left=14, top=12, right=14, bottom=12),
+            content=ft.Column([
+                ft.Text(value, size=17, weight=ft.FontWeight.W_800, color=ACCENT),
+                ft.Text(label, size=11, color=SUB),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
+        )
 
     def refresh():
         user  = get_user(session.state['user_id'])
@@ -29,26 +38,19 @@ def build_profile_page(page: ft.Page, navigate=None, on_logout=None) -> ft.Contr
         done_count = sum(1 for s in schedules if s['is_done'])
         total      = len(schedules)
         rate       = int(done_count / total * 100) if total > 0 else 0
+        pts        = plant['total_points'] if plant else 0
+        streak     = plant['streak_days']  if plant else 0
 
-        stats_row.controls.clear()
-        for label, value in [
-            ('이번달 완료', f"{done_count}개"),
-            ('총 포인트',   f"{plant['total_points'] if plant else 0}p"),
-            ('연속일수',    f"{plant['streak_days'] if plant else 0}일"),
-            ('완료율',      f"{rate}%"),
-        ]:
-            stats_row.controls.append(
-                ft.Container(
-                    bgcolor=CARD,
-                    border_radius=14,
-                    border=border(1, BORDER),
-                    padding=ft.Padding(left=14, top=12, right=14, bottom=12),
-                    content=ft.Column([
-                        ft.Text(value, size=17, weight=ft.FontWeight.W_800, color=ACCENT),
-                        ft.Text(label, size=11, color=SUB),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
-                )
-            )
+        stats_grid.controls = [
+            ft.Row([
+                _stat_card('이번달 완료', f"{done_count}개"),
+                _stat_card('총 포인트',   f"{pts}p"),
+            ], spacing=10),
+            ft.Row([
+                _stat_card('연속일수',    f"{streak}일"),
+                _stat_card('완료율',      f"{rate}%"),
+            ], spacing=10),
+        ]
         page.update()
 
     def open_edit_dialog(e):
@@ -135,7 +137,7 @@ def build_profile_page(page: ft.Page, navigate=None, on_logout=None) -> ft.Contr
                         ], alignment=ft.MainAxisAlignment.CENTER, spacing=0),
                     ),
                     ft.Container(height=20),
-                    stats_row,
+                    stats_grid,
                     ft.Container(height=16),
                     ft.TextButton(
                         '로그아웃',
