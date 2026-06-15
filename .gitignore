@@ -23,7 +23,7 @@ Thumbs.db
 
 # 보고서 양식 및 독립 실행 파일
 *.pdf
-싹 standalone.html
+*.html
 
 # 미사용 이미지 에셋
 assets/
