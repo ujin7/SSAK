@@ -18,11 +18,10 @@ def create_tables():
     # ── user ─────────────────────────────────────────────────────────────────
     con.execute("""
         CREATE TABLE IF NOT EXISTS user (
-            id          INTEGER      PRIMARY KEY,
-            nickname    VARCHAR(50)  NOT NULL UNIQUE,
-            profile_img VARCHAR(200) DEFAULT 'assets/default_profile.png',
-            is_public   BOOLEAN      DEFAULT TRUE,
-            created_at  TIMESTAMP    DEFAULT NOW()
+            id         INTEGER     PRIMARY KEY,
+            nickname   VARCHAR(50) NOT NULL UNIQUE,
+            is_public  BOOLEAN     DEFAULT TRUE,
+            created_at TIMESTAMP   DEFAULT NOW()
         )
     """)
 
@@ -139,13 +138,13 @@ def insert_sample_data():
 
     # ── 유저 5명 ──────────────────────────────────────────────────────────────
     con.executemany(
-        "INSERT INTO user (id, nickname, profile_img, is_public) VALUES (?, ?, ?, ?)",
+        "INSERT INTO user (id, nickname, is_public) VALUES (?, ?, ?)",
         [
-            (1, '노우진', 'assets/default_profile.png', True),
-            (2, '김민지', 'assets/default_profile.png', True),
-            (3, '이서준', 'assets/default_profile.png', True),
-            (4, '박하은', 'assets/default_profile.png', False),
-            (5, '최지호', 'assets/default_profile.png', True),
+            (1, '노우진', True),
+            (2, '김민지', True),
+            (3, '이서준', True),
+            (4, '박하은', False),
+            (5, '최지호', True),
         ]
     )
 

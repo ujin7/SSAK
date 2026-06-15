@@ -40,8 +40,7 @@ def get_pending_requests(user_id: int) -> list[dict]:
 def get_friends_with_plant(user_id: int) -> list[dict]:
     con = get_connection()
     rows = con.execute(
-        """SELECT u.id, u.nickname, u.profile_img,
-                  p.stage, p.total_points
+        """SELECT u.id, u.nickname, p.stage, p.total_points
            FROM friend f
            JOIN user u ON f.to_user_id = u.id
            LEFT JOIN plant p ON u.id = p.user_id
@@ -50,8 +49,7 @@ def get_friends_with_plant(user_id: int) -> list[dict]:
     ).fetchall()
     con.close()
     return [
-        {'id': r[0], 'nickname': r[1], 'profile_img': r[2],
-         'stage': r[3], 'total_points': r[4]}
+        {'id': r[0], 'nickname': r[1], 'stage': r[2], 'total_points': r[3]}
         for r in rows
     ]
 
