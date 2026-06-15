@@ -1,4 +1,8 @@
+import hashlib
 from database import get_connection
+
+def _hash(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def get_user(user_id: int) -> dict | None:
     con = get_connection()
@@ -37,14 +41,25 @@ def get_users_with_plant() -> list[dict]:
     return [{'id': r[0], 'nickname': r[1], 'stage': r[2] or 'seed', 'points': r[3] or 0}
             for r in rows]
 
-def create_user_with_plant(nickname: str) -> int:
+def verify_login(nickname: str, password: str) -> dict | None:
+    con = get_connection()
+    row = con.execute(
+        "SELECT id, nickname, is_public FROM user WHERE nickname = ? AND password_hash = ?",
+        [nickname, _hash(password)]
+    ).fetchone()
+    con.close()
+    if row is None:
+        return None
+    return {'id': row[0], 'nickname': row[1], 'is_public': row[2]}
+
+def create_user_with_plant(nickname: str, password: str) -> int:
     con = get_connection()
     try:
         con.begin()
         new_id = con.execute("SELECT nextval('seq_user')").fetchone()[0]
         con.execute(
-            "INSERT INTO user (id, nickname, is_public) VALUES (?, ?, TRUE)",
-            [new_id, nickname]
+            "INSERT INTO user (id, nickname, password_hash, is_public) VALUES (?, ?, ?, TRUE)",
+            [new_id, nickname, _hash(password)]
         )
         plant_id = con.execute("SELECT nextval('seq_plant')").fetchone()[0]
         con.execute(

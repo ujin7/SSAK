@@ -18,10 +18,11 @@ def create_tables():
     # ── user ─────────────────────────────────────────────────────────────────
     con.execute("""
         CREATE TABLE IF NOT EXISTS user (
-            id         INTEGER     PRIMARY KEY,
-            nickname   VARCHAR(50) NOT NULL UNIQUE,
-            is_public  BOOLEAN     DEFAULT TRUE,
-            created_at TIMESTAMP   DEFAULT NOW()
+            id            INTEGER     PRIMARY KEY,
+            nickname      VARCHAR(50) NOT NULL UNIQUE,
+            password_hash VARCHAR(64) NOT NULL,
+            is_public     BOOLEAN     DEFAULT TRUE,
+            created_at    TIMESTAMP   DEFAULT NOW()
         )
     """)
 
@@ -136,15 +137,17 @@ def insert_sample_data():
         con.close()
         return
 
-    # ── 유저 5명 ──────────────────────────────────────────────────────────────
+    # ── 유저 5명 (비밀번호: 모두 "1234" → SHA-256) ──────────────────────────
+    # sha256("1234") = 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4
+    PW = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'
     con.executemany(
-        "INSERT INTO user (id, nickname, is_public) VALUES (?, ?, ?)",
+        "INSERT INTO user (id, nickname, password_hash, is_public) VALUES (?, ?, ?, ?)",
         [
-            (1, '노우진', True),
-            (2, '김민지', True),
-            (3, '이서준', True),
-            (4, '박하은', False),
-            (5, '최지호', True),
+            (1, '노우진', PW, True),
+            (2, '김민지', PW, True),
+            (3, '이서준', PW, True),
+            (4, '박하은', PW, False),
+            (5, '최지호', PW, True),
         ]
     )
 
