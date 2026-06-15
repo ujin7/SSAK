@@ -1,6 +1,5 @@
 # 데이터베이스 파일 (앱 첫 실행 시 자동 생성됨)
 ssak.duckdb
-ssak.duckdb.wal
 
 # Python 캐시
 __pycache__/
@@ -25,5 +24,5 @@ Thumbs.db
 *.pdf
 *.html
 
-# 미사용 이미지 에셋
-assets/
+# 데이터베이스 WAL 파일
+ssak.duckdb.wal

@@ -14,17 +14,24 @@ def calc_stage(points: int) -> str:
             return stage
     return 'tree'
 
+STAGE_IMAGE = {
+    'seed':   'seed.png',
+    'leaf':   'leaf.png',
+    'flower': 'flower.png',
+    'tree':   'tree.png',
+}
+
 def get_plant(user_id: int) -> dict | None:
     con = get_connection()
     row = con.execute(
-        "SELECT id, user_id, stage, total_points, streak_days FROM plant WHERE user_id = ?",
+        "SELECT id, user_id, stage, total_points, streak_days, image_path FROM plant WHERE user_id = ?",
         [user_id]
     ).fetchone()
     con.close()
     if row is None:
         return None
     return {'id': row[0], 'user_id': row[1], 'stage': row[2],
-            'total_points': row[3], 'streak_days': row[4]}
+            'total_points': row[3], 'streak_days': row[4], 'image_path': row[5]}
 
 def add_points(user_id: int, points: int = 10):
     """일정 완료 시 포인트 추가 · stage 업데이트 · streak 재계산을 트랜잭션으로 처리"""
@@ -64,8 +71,8 @@ def add_points(user_id: int, points: int = 10):
                 check -= timedelta(days=1)
 
         con.execute(
-            "UPDATE plant SET total_points = ?, stage = ?, streak_days = ?, last_updated = NOW() WHERE user_id = ?",
-            [new_points, new_stage, streak, user_id]
+            "UPDATE plant SET total_points = ?, stage = ?, streak_days = ?, image_path = ?, last_updated = NOW() WHERE user_id = ?",
+            [new_points, new_stage, streak, STAGE_IMAGE[new_stage], user_id]
         )
         con.commit()
     except Exception:

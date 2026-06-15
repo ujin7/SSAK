@@ -6,7 +6,7 @@ from theme import (SCREEN, CARD, BORDER, ACCENT, TEXT, SUB, FAINT,
 
 
 def build_garden_page(page: ft.Page) -> ft.Control:
-    plant_img      = ft.Text('🌱', size=80)
+    plant_img      = ft.Image(src='seed.png', width=160, height=160)
     stage_text     = ft.Text('씨앗 단계', size=22, weight=ft.FontWeight.W_800, color=ACCENT)
     points_text    = ft.Text('0 포인트', size=15, color=SUB)
     streak_text    = ft.Text('연속 0일', size=13, color=FAINT)
@@ -21,7 +21,7 @@ def build_garden_page(page: ft.Page) -> ft.Control:
         points = plant['total_points']
         streak = plant['streak_days']
 
-        plant_img.value       = STAGE_EMOJI.get(stage, '🌱')
+        plant_img.src         = plant['image_path']
         stage_text.value      = STAGE_LABELS.get(stage, stage)
         stage_text.color      = STAGE_COLORS.get(stage, ACCENT)
         points_text.value     = f'{points} 포인트'

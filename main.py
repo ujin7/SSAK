@@ -80,4 +80,4 @@ def main(page: ft.Page):
 
 create_tables()
 insert_sample_data()
-ft.run(main)
+ft.run(main, assets_dir="assets")

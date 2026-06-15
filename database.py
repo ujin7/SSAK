@@ -43,16 +43,17 @@ def create_tables():
         )
     """)
 
-    # ── plant (plant_img 제거: stage에서 도출 → 3NF 준수) ────────────────────
+    # ── plant ────────────────────────────────────────────────────────────────
     con.execute("""
         CREATE TABLE IF NOT EXISTS plant (
-            id           INTEGER    PRIMARY KEY,
-            user_id      INTEGER    UNIQUE NOT NULL,
-            stage        VARCHAR(20) DEFAULT 'seed'
+            id           INTEGER      PRIMARY KEY,
+            user_id      INTEGER      UNIQUE NOT NULL,
+            stage        VARCHAR(20)  DEFAULT 'seed'
                          CHECK (stage IN ('seed', 'leaf', 'flower', 'tree')),
-            total_points INTEGER    DEFAULT 0 CHECK (total_points >= 0),
-            streak_days  INTEGER    DEFAULT 0 CHECK (streak_days >= 0),
-            last_updated TIMESTAMP  DEFAULT NOW(),
+            total_points INTEGER      DEFAULT 0 CHECK (total_points >= 0),
+            streak_days  INTEGER      DEFAULT 0 CHECK (streak_days >= 0),
+            image_path   VARCHAR(200) DEFAULT 'seed.png',
+            last_updated TIMESTAMP    DEFAULT NOW(),
             FOREIGN KEY (user_id) REFERENCES user(id)
         )
     """)
@@ -227,15 +228,15 @@ def insert_sample_data():
         ]
     )
 
-    # ── 식물 (plant_img 컬럼 없음) ────────────────────────────────────────────
+    # ── 식물 ──────────────────────────────────────────────────────────────────
     con.executemany(
-        "INSERT INTO plant (id, user_id, stage, total_points, streak_days) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO plant (id, user_id, stage, total_points, streak_days, image_path) VALUES (?, ?, ?, ?, ?, ?)",
         [
-            (1, 1, 'flower', 120, 12),
-            (2, 2, 'leaf',    60,  4),
-            (3, 3, 'leaf',    45,  2),
-            (4, 4, 'tree',   200, 14),
-            (5, 5, 'seed',    10,  1),
+            (1, 1, 'flower', 120, 12, 'flower.png'),
+            (2, 2, 'leaf',    60,  4, 'leaf.png'),
+            (3, 3, 'leaf',    45,  2, 'leaf.png'),
+            (4, 4, 'tree',   200, 14, 'tree.png'),
+            (5, 5, 'seed',    10,  1, 'seed.png'),
         ]
     )
 
