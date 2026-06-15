@@ -3,14 +3,89 @@ import flet as ft
 from repository.friend import (get_friends_with_plant, search_users,
                                 send_request, accept, get_pending_requests,
                                 add_interaction, has_watered_today,
-                                water_cooldown_label)
+                                water_cooldown_label, get_feed, FEED_TYPE)
 from repository.plant import add_water_points
 from theme import (SCREEN, CARD, CARD_ALT, BORDER, ACCENT, TEXT, SUB, FAINT,
                    WATER, FIRE, STAGE_LABELS, STAGE_EMOJI, border)
 
 
 def build_friends_page(page: ft.Page, navigate=None) -> ft.Control:
-    friend_list = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO)
+    # ── 탭 상태 ───────────────────────────────────────────────────────────────
+    sel_tab = ['feed']   # 'feed' | 'list'
+
+    feed_col   = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
+    friend_col = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
+    friend_list = friend_col   # 기존 코드와 호환
+
+    tab_feed_btn = ft.Container()
+    tab_list_btn = ft.Container()
+
+    def render_tabs():
+        def make_tab(label, key):
+            active = sel_tab[0] == key
+            return ft.Container(
+                expand=True,
+                padding=ft.Padding(left=0, top=8, right=0, bottom=8),
+                border=ft.Border(bottom=ft.BorderSide(2, ACCENT if active else 'transparent')),
+                alignment=ft.Alignment(0, 0),
+                on_click=lambda e, k=key: switch_tab(k),
+                content=ft.Text(label, size=14,
+                                weight=ft.FontWeight.W_700 if active else ft.FontWeight.W_500,
+                                color=TEXT if active else SUB),
+            )
+        tab_row.controls = [make_tab('피드', 'feed'), make_tab('친구 목록', 'list')]
+
+    def switch_tab(key):
+        sel_tab[0] = key
+        feed_col.visible   = (key == 'feed')
+        friend_col.visible = (key == 'list')
+        render_tabs()
+        if key == 'feed':
+            refresh_feed()
+        page.update()
+
+    tab_row = ft.Row(spacing=0, expand=True)
+    render_tabs()
+
+    # ── 피드 ─────────────────────────────────────────────────────────────────
+    def refresh_feed():
+        feed_col.controls.clear()
+        items = get_feed(session.state['user_id'])
+        if not items:
+            feed_col.controls.append(
+                ft.Container(
+                    alignment=ft.Alignment(0, 0), padding=40,
+                    content=ft.Text('아직 활동이 없어요', color=FAINT),
+                )
+            )
+            return
+        for item in items:
+            me = session.state['user_id']
+            is_received = item['to_id'] == me
+            emoji, action = FEED_TYPE.get(item['type'], ('?', '?'))
+            if is_received:
+                msg = f"{item['from_name']}이(가) 내 식물에 {action}"
+            else:
+                msg = f"{item['to_name']}에게 {action}"
+            feed_col.controls.append(
+                ft.Container(
+                    bgcolor=CARD,
+                    border_radius=14,
+                    border=border(1, BORDER),
+                    padding=ft.Padding(left=16, top=12, right=16, bottom=12),
+                    content=ft.Row([
+                        ft.Text(emoji, size=28),
+                        ft.Container(width=12),
+                        ft.Column([
+                            ft.Text(msg, size=13, color=TEXT,
+                                    weight=ft.FontWeight.W_600),
+                            ft.Text(item['time_ago'], size=11, color=FAINT),
+                        ], spacing=3, expand=True),
+                    ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                )
+            )
+
+    refresh_feed()
 
     water_buttons: dict[int, ft.ElevatedButton] = {}
 
@@ -203,12 +278,14 @@ def build_friends_page(page: ft.Page, navigate=None) -> ft.Control:
 
     refresh()
 
+    friend_col.visible = False   # 기본 피드 탭
+
     return ft.Container(
         bgcolor=SCREEN,
         expand=True,
         content=ft.Column([
             ft.Container(
-                padding=ft.Padding(left=22, top=4, right=22, bottom=12),
+                padding=ft.Padding(left=22, top=4, right=22, bottom=4),
                 content=ft.Row([
                     ft.Text('친구', size=22, weight=ft.FontWeight.W_800, color=TEXT),
                     ft.Row([
@@ -218,15 +295,20 @@ def build_friends_page(page: ft.Page, navigate=None) -> ft.Control:
                         ),
                         ft.IconButton(
                             ft.Icons.REFRESH, icon_color=SUB,
-                            on_click=lambda e: refresh(), tooltip='새로고침',
+                            on_click=lambda e: refresh() if sel_tab[0] == 'list' else refresh_feed(),
+                            tooltip='새로고침',
                         ),
                     ], spacing=0),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ),
             ft.Container(
+                padding=ft.Padding(left=16, top=0, right=16, bottom=0),
+                content=tab_row,
+            ),
+            ft.Container(
                 expand=True,
-                padding=ft.Padding(left=16, top=0, right=16, bottom=16),
-                content=friend_list,
+                padding=ft.Padding(left=16, top=12, right=16, bottom=16),
+                content=ft.Stack([feed_col, friend_col], expand=True),
             ),
         ], spacing=0, expand=True),
     )

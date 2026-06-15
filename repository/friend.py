@@ -1,5 +1,44 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from database import get_connection
+
+FEED_TYPE = {
+    'water': ('💧', '물을 줬어요'),
+    'like':  ('☀️', '햇빛을 줬어요'),
+    'cheer': ('🌿', '비료를 줬어요'),
+}
+
+def _time_ago(sent_at) -> str:
+    if hasattr(sent_at, 'replace'):
+        sent_at = sent_at.replace(tzinfo=None)
+    diff = (datetime.now() - sent_at).total_seconds()
+    if diff < 60:    return '방금 전'
+    if diff < 3600:  return f'{int(diff // 60)}분 전'
+    if diff < 86400: return f'{int(diff // 3600)}시간 전'
+    return f'{int(diff // 86400)}일 전'
+
+def get_feed(user_id: int, limit: int = 20) -> list[dict]:
+    """나와 관련된 상호작용 피드 (보내거나 받은 것)"""
+    con = get_connection()
+    rows = con.execute(
+        """SELECT i.type, i.sent_at,
+                  u_from.id, u_from.nickname,
+                  u_to.id,   u_to.nickname
+           FROM interaction i
+           JOIN user u_from ON i.from_user_id = u_from.id
+           JOIN user u_to   ON i.to_user_id   = u_to.id
+           WHERE i.from_user_id = ? OR i.to_user_id = ?
+           ORDER BY i.sent_at DESC
+           LIMIT ?""",
+        [user_id, user_id, limit]
+    ).fetchall()
+    con.close()
+    return [
+        {'type': r[0], 'sent_at': r[1],
+         'from_id': r[2], 'from_name': r[3],
+         'to_id': r[4], 'to_name': r[5],
+         'time_ago': _time_ago(r[1])}
+        for r in rows
+    ]
 
 def send_request(from_user_id: int, to_user_id: int):
     con = get_connection()
