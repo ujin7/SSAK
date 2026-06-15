@@ -2,7 +2,9 @@ import session
 import flet as ft
 from repository.friend import (get_friends_with_plant, search_users,
                                 send_request, accept, get_pending_requests,
-                                add_interaction)
+                                add_interaction, has_watered_today,
+                                water_cooldown_label)
+from repository.plant import add_water_points
 from theme import (SCREEN, CARD, CARD_ALT, BORDER, ACCENT, TEXT, SUB, FAINT,
                    WATER, FIRE, STAGE_LABELS, STAGE_EMOJI, border)
 
@@ -10,10 +12,20 @@ from theme import (SCREEN, CARD, CARD_ALT, BORDER, ACCENT, TEXT, SUB, FAINT,
 def build_friends_page(page: ft.Page, navigate=None) -> ft.Control:
     friend_list = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO)
 
+    water_buttons: dict[int, ft.ElevatedButton] = {}
+
     def water_plant(friend_id: int, friend_name: str):
         add_interaction(session.state['user_id'], friend_id)
+        add_water_points(friend_id, 5)
+        btn = water_buttons.get(friend_id)
+        if btn:
+            btn.text     = '24시간 후'
+            btn.icon     = ft.Icons.ACCESS_TIME
+            btn.bgcolor  = FAINT
+            btn.color    = SUB
+            btn.disabled = True
         page.snack_bar = ft.SnackBar(
-            ft.Text(f"{friend_name}의 식물에 물을 줬어요 💧"), bgcolor=CARD,
+            ft.Text(f"{friend_name}의 식물에 물을 줬어요 💧 (+5p)"), bgcolor=CARD,
         )
         page.snack_bar.open = True
         page.update()
@@ -62,7 +74,7 @@ def build_friends_page(page: ft.Page, navigate=None) -> ft.Control:
         for f in friends:
             stage       = f['stage'] or 'seed'
             stage_label = STAGE_LABELS.get(stage, '씨앗')
-            emoji       = STAGE_EMOJI.get(stage, '🌱')
+            image_path  = f['image_path'] or 'seed.png'
             pts         = f['total_points'] or 0
 
             def make_water(fid, fname):
@@ -70,6 +82,18 @@ def build_friends_page(page: ft.Page, navigate=None) -> ft.Control:
 
             def make_nav(fid):
                 return lambda e: navigate('friend_garden', friend_id=fid) if navigate else None
+
+            cooldown = water_cooldown_label(session.state['user_id'], f['id'])
+            btn = ft.ElevatedButton(
+                cooldown if cooldown else '물주기',
+                icon=ft.Icons.ACCESS_TIME if cooldown else ft.Icons.WATER_DROP,
+                bgcolor=FAINT if cooldown else WATER,
+                color=SUB if cooldown else '#0E120C',
+                disabled=bool(cooldown),
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20)),
+                on_click=make_water(f['id'], f['nickname']),
+            )
+            water_buttons[f['id']] = btn
 
             friend_list.controls.append(
                 ft.Container(
@@ -82,20 +106,14 @@ def build_friends_page(page: ft.Page, navigate=None) -> ft.Control:
                         ft.Container(
                             width=44, height=44, border_radius=22,
                             bgcolor=CARD_ALT, alignment=ft.Alignment(0, 0),
-                            content=ft.Text(emoji, size=22),
+                            content=ft.Image(src=image_path, width=36, height=36),
                         ),
                         ft.Container(width=10),
                         ft.Column([
                             ft.Text(f['nickname'], size=15, weight=ft.FontWeight.W_700, color=TEXT),
                             ft.Text(f"{stage_label} · {pts}p", size=12, color=SUB),
                         ], spacing=3, expand=True),
-                        ft.ElevatedButton(
-                            '물주기',
-                            icon=ft.Icons.WATER_DROP,
-                            bgcolor=WATER, color='#0E120C',
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20)),
-                            on_click=make_water(f['id'], f['nickname']),
-                        ),
+                        btn,
                     ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 )
             )

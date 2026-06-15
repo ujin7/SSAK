@@ -9,11 +9,11 @@ def build_friend_garden_page(page: ft.Page, friend_id: int, go_back) -> ft.Contr
     user  = get_user(friend_id)
     plant = get_plant(friend_id)
 
-    nickname = user['nickname'] if user else '친구'
-    stage    = plant['stage'] if plant else 'seed'
-    points   = plant['total_points'] if plant else 0
-    streak   = plant['streak_days'] if plant else 0
-    emoji    = STAGE_EMOJI.get(stage, '🌱')
+    nickname   = user['nickname'] if user else '친구'
+    stage      = plant['stage']       if plant else 'seed'
+    points     = plant['total_points'] if plant else 0
+    streak     = plant['streak_days']  if plant else 0
+    image_path = plant['image_path']   if plant else 'seed.png'
 
     progress, prog_label = stage_progress(stage, points)
 
@@ -43,8 +43,8 @@ def build_friend_garden_page(page: ft.Page, friend_id: int, go_back) -> ft.Contr
                         bgcolor=CARD,
                         border_radius=24,
                         border=border(1, BORDER),
-                        padding=40,
-                        content=ft.Text(emoji, size=90),
+                        padding=32,
+                        content=ft.Image(src=image_path, width=160, height=160),
                     ),
                     ft.Container(height=20),
                     ft.Container(

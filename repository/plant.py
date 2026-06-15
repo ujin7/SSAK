@@ -81,6 +81,30 @@ def add_points(user_id: int, points: int = 10):
     finally:
         con.close()
 
+def add_water_points(user_id: int, points: int = 5):
+    """친구가 물을 줄 때 포인트 추가 (streak는 변경하지 않음)"""
+    con = get_connection()
+    try:
+        con.begin()
+        row = con.execute(
+            "SELECT total_points FROM plant WHERE user_id = ?", [user_id]
+        ).fetchone()
+        if row is None:
+            con.rollback()
+            return
+        new_points = row[0] + points
+        new_stage  = calc_stage(new_points)
+        con.execute(
+            "UPDATE plant SET total_points = ?, stage = ?, image_path = ?, last_updated = NOW() WHERE user_id = ?",
+            [new_points, new_stage, STAGE_IMAGE[new_stage], user_id]
+        )
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+
 def recalc_streak(user_id: int) -> int:
     """streak만 단독으로 재계산이 필요할 때 사용"""
     con = get_connection()
