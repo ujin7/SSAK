@@ -1,4 +1,5 @@
 import flet as ft
+import session
 from database import create_tables, insert_sample_data
 from pages.calendar import build_calendar_page
 from pages.garden import build_garden_page
@@ -65,7 +66,13 @@ def main(page: ft.Page):
         elif index == 2:
             content.content = build_friends_page(page, navigate=navigate)
         elif index == 3:
-            content.content = build_profile_page(page, navigate=navigate)
+            content.content = build_profile_page(page, navigate=navigate, on_logout=on_logout)
+        page.update()
+
+    def on_logout():
+        session.state['user_id'] = None
+        nav.visible = False
+        content.content = build_login_page(page, on_login=on_login)
         page.update()
 
     def on_login():

@@ -7,7 +7,7 @@ from datetime import date
 from theme import SCREEN, CARD, BORDER, ACCENT, TEXT, SUB, FAINT, border
 
 
-def build_profile_page(page: ft.Page, navigate=None) -> ft.Control:
+def build_profile_page(page: ft.Page, navigate=None, on_logout=None) -> ft.Control:
     nickname_text = ft.Text('', size=22, weight=ft.FontWeight.W_800, color=TEXT)
     avatar_emoji  = ft.Text('🌿', size=40)
     stats_row     = ft.Row(
@@ -136,6 +136,13 @@ def build_profile_page(page: ft.Page, navigate=None) -> ft.Control:
                     ),
                     ft.Container(height=20),
                     stats_row,
+                    ft.Container(height=16),
+                    ft.TextButton(
+                        '로그아웃',
+                        icon=ft.Icons.LOGOUT,
+                        on_click=lambda e: on_logout() if on_logout else None,
+                        style=ft.ButtonStyle(color='#E05C5C'),
+                    ),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=4),
             ),
         ], spacing=0, expand=True),

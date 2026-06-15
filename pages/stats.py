@@ -2,8 +2,18 @@ import session
 import flet as ft
 from repository.schedule import get_monthly
 from repository.plant import get_plant
+from repository.daily_log import get_mood_stats, MOOD_EMOJI, MOOD_LABEL
 from datetime import date
 from theme import SCREEN, CARD, BORDER, ACCENT, TEXT, SUB, FAINT, HEAT, border
+
+MOOD_ORDER  = ['great', 'good', 'neutral', 'bad', 'terrible']
+MOOD_COLOR  = {
+    'great':   '#84CC4E',
+    'good':    '#5BC8A8',
+    'neutral': '#8899AA',
+    'bad':     '#F5A340',
+    'terrible':'#E05C5C',
+}
 
 
 def build_stats_page(page: ft.Page, go_back) -> ft.Control:
@@ -59,6 +69,28 @@ def build_stats_page(page: ft.Page, go_back) -> ft.Control:
         ('🌱 단계',    plant['stage'] if plant else 'seed',           '현재'),
     ]
 
+    # 감정 통계
+    mood_stats = get_mood_stats(session.state['user_id'], today.year, today.month)
+    mood_total = sum(mood_stats.values()) or 1
+    mood_rows = []
+    for mood in MOOD_ORDER:
+        count = mood_stats.get(mood, 0)
+        ratio = count / mood_total
+        bar_w = max(4, int(180 * ratio)) if count > 0 else 4
+        mood_rows.append(
+            ft.Row([
+                ft.Text(MOOD_EMOJI[mood], size=20, width=32),
+                ft.Text(MOOD_LABEL[mood], size=12, color=SUB, width=36),
+                ft.Container(
+                    height=14, width=bar_w,
+                    bgcolor=MOOD_COLOR[mood],
+                    border_radius=7,
+                ),
+                ft.Container(width=6),
+                ft.Text(str(count), size=12, color=TEXT if count else FAINT),
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
+        )
+
     def make_card_row(items):
         return ft.Row([
             ft.Container(
@@ -111,6 +143,22 @@ def build_stats_page(page: ft.Page, go_back) -> ft.Control:
                                 vertical_alignment=ft.CrossAxisAlignment.END,
                             ),
                         ]),
+                    ),
+                    ft.Container(height=12),
+                    ft.Container(
+                        bgcolor=CARD,
+                        border_radius=18,
+                        border=border(1, BORDER),
+                        padding=ft.Padding(left=16, top=16, right=16, bottom=16),
+                        content=ft.Column([
+                            ft.Row([
+                                ft.Text('이번달 감정 기록', size=14,
+                                        weight=ft.FontWeight.W_700, color=TEXT),
+                                ft.Text(f'{sum(mood_stats.values())}일', size=12, color=FAINT),
+                            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Container(height=12),
+                            *mood_rows,
+                        ], spacing=10),
                     ),
                     ft.Container(height=12),
                     make_card_row(stat_cards[:3]),
