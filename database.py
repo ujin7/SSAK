@@ -126,6 +126,53 @@ def create_tables():
     # 보유 아이템 조회
     con.execute("CREATE INDEX IF NOT EXISTS idx_user_item_user     ON user_item(user_id)")
 
+    # ── 뷰 (자주 쓰는 JOIN 쿼리를 뷰로 정의) ────────────────────────────────
+    # 뷰1: 유저 + 식물 현황 통합
+    con.execute("""
+        CREATE VIEW IF NOT EXISTS v_user_plant AS
+        SELECT u.id,
+               u.nickname,
+               u.is_public,
+               p.stage,
+               p.total_points,
+               p.streak_days,
+               p.last_updated
+        FROM user u
+        LEFT JOIN plant p ON u.id = p.user_id
+    """)
+
+    # 뷰2: 수락된 친구 관계 + 상대방 식물 현황
+    con.execute("""
+        CREATE VIEW IF NOT EXISTS v_friend_plant AS
+        SELECT f.from_user_id,
+               u.nickname         AS my_nickname,
+               fu.nickname        AS friend_nickname,
+               fp.stage           AS friend_stage,
+               fp.total_points    AS friend_points,
+               fp.streak_days     AS friend_streak
+        FROM friend f
+        JOIN user  u  ON f.from_user_id = u.id
+        JOIN user  fu ON f.to_user_id   = fu.id
+        LEFT JOIN plant fp ON fu.id = fp.user_id
+        WHERE f.status = 'accepted'
+    """)
+
+    # 뷰3: 친구의 공개 일정 (is_public = TRUE 유저만)
+    con.execute("""
+        CREATE VIEW IF NOT EXISTS v_friend_public_schedule AS
+        SELECT f.from_user_id,
+               fu.nickname  AS friend_nickname,
+               s.title,
+               s.sched_date,
+               s.icon,
+               s.is_done
+        FROM friend f
+        JOIN user fu ON f.to_user_id = fu.id
+        LEFT JOIN schedule s ON fu.id = s.user_id
+        WHERE f.status = 'accepted'
+          AND fu.is_public = TRUE
+    """)
+
     con.close()
 
 
@@ -248,6 +295,8 @@ def insert_sample_data():
 def reset_db():
     """DB 전체 초기화 (개발용)"""
     con = get_connection()
+    for view in ['v_friend_public_schedule', 'v_friend_plant', 'v_user_plant']:
+        con.execute(f"DROP VIEW IF EXISTS {view}")
     for tbl in ['user_item', 'item', 'interaction', 'friend', 'plant', 'schedule', 'user']:
         con.execute(f"DROP TABLE IF EXISTS {tbl}")
     for seq in ['seq_user', 'seq_schedule', 'seq_plant', 'seq_interaction', 'seq_item']:
