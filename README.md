@@ -91,8 +91,10 @@ SSAK/
 
 ---
 
-## 스크린샷
+## 개발 환경
 
-| 로그인 | 정원 | 친구 |
-|--------|------|------|
-| ![login](assets/seed.png) | ![garden](assets/flower.png) | ![friends](assets/leaf.png) |
+- OS: Windows 11
+- IDE: Visual Studio Code
+- Python 3.10+
+- Flet
+- DuckDB
